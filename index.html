@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Stock - إدارة المخزون</title>
+<style>
+*{box-sizing:border-box;font-family:Tahoma,Arial}body{margin:0;background:#f1f5f9;color:#111}header{background:#0f172a;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}header h1{margin:0;font-size:22px}header span{font-size:13px;opacity:.8}.container{max-width:1100px;margin:auto;padding:16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}.card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}.card b{font-size:28px;display:block}.card small{color:#64748b}.box{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}h2{margin:0 0 12px;font-size:18px}input,select{width:100%;padding:10px;margin:4px 0 8px;border:1px solid #cbd5e1;border-radius:8px}button{background:#0f172a;color:#fff;border:0;padding:10px 16px;border-radius:8px;cursor:pointer}button.green{background:#16a34a}button.red{background:#dc2626;padding:6px 10px;font-size:12px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:right}.flex{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.flex{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div><h1>📦 Smart Stock</h1><span>Smart Stock Inventory Management System</span></div><div>shahirfaqir69-web</div></header>
+<div class="container">
+<div class="cards">
+<div class="card"><small>إجمالي المنتجات</small><b id="totalProducts">0</b></div>
+<div class="card"><small>إجمالي العملاء</small><b id="totalCustomers">0</b></div>
+<div class="card"><small>إجمالي الكمية</small><b id="totalQty">0</b></div>
+<div class="card"><small>قيمة المخزون</small><b id="totalValue">0</b></div>
+</div>
+
+<div class="flex">
+<div class="box"><h2>➕ إضافة منتج جديد</h2>
+<input id="pName" placeholder="اسم المنتج - مثال: رز 10 كيلو">
+<input id="pSku" placeholder="كود المنتج SKU">
+<input id="pQty" type="number" placeholder="الكمية">
+<input id="pPrice" type="number" placeholder="السعر">
+<select id="pWarehouse"><option value="المخزن الرئيسي">المخزن الرئيسي</option><option value="مخزن جدة">مخزن جدة</option><option value="مخزن الرياض">مخزن الرياض</option></select>
+<button class="green" onclick="addProduct()">إضافة المنتج</button>
+</div>
+
+<div class="box"><h2>👤 إضافة عميل جديد</h2>
+<input id="cName" placeholder="اسم العميل">
+<input id="cPhone" placeholder="رقم الجوال">
+<input id="cCity" placeholder="المدينة">
+<button class="green" onclick="addCustomer()">إضافة العميل</button>
+<p style="font-size:12px;color:#64748b">قاعدة البيانات تحفظ تلقائيا في جهازك، تقدر تضيف عملاء ومخازن بلا حدود.</p>
+</div>
+</div>
+
+<div class="box"><h2>📦 المخزون الحالي</h2>
+<input id="search" placeholder="ابحث عن منتج..." oninput="render()">
+<table><thead><tr><th>المنتج</th><th>الكود</th><th>المخزن</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th><th>حذف</th></tr></thead><tbody id="productTable"></tbody></table>
+</div>
+
+<div class="box"><h2>👥 العملاء</h2>
+<table><thead><tr><th>الاسم</th><th>الجوال</th><th>المدينة</th><th>حذف</th></tr></thead><tbody id="customerTable"></tbody></table>
+</div>
+</div>
+<script>
+let products = JSON.parse(localStorage.getItem('ss_products')||'[]');
+let customers = JSON.parse(localStorage.getItem('ss_customers')||'[]');
+function save(){localStorage.setItem('ss_products',JSON.stringify(products));localStorage.setItem('ss_customers',JSON.stringify(customers));render();}
+function addProduct(){
+let name=document.getElementById('pName').value.trim();
+let sku=document.getElementById('pSku').value.trim()||'SKU-'+Date.now();
+let qty=parseFloat(document.getElementById('pQty').value)||0;
+let price=parseFloat(document.getElementById('pPrice').value)||0;
+let wh=document.getElementById('pWarehouse').value;
+if(!name||!qty){alert('اكتب اسم المنتج والكمية');return;}
+products.push({name,sku,qty,price,wh});
+document.getElementById('pName').value='';document.getElementById('pQty').value='';document.getElementById('pPrice').value='';
+save();
+}
+function addCustomer(){
+let name=document.getElementById('cName').value.trim();
+let phone=document.getElementById('cPhone').value.trim();
+let city=document.getElementById('cCity').value.trim();
+if(!name){alert('اكتب اسم العميل');return;}
+customers.push({name,phone,city});
+document.getElementById('cName').value='';document.getElementById('cPhone').value='';document.getElementById('cCity').value='';
+save();
+}
+function delP(i){products.splice(i,1);save();}
+function delC(i){customers.splice(i,1);save();}
+function render(){
+let q=(document.getElementById('search').value||'').toLowerCase();
+let pt=document.getElementById('productTable');pt.innerHTML='';
+let totalQty=0,totalVal=0;
+products.forEach((p,i)=>{
+if(q && !p.name.toLowerCase().includes(q)) return;
+totalQty+=p.qty;totalVal+=p.qty*p.price;
+pt.innerHTML+=`<tr><td>${p.name}</td><td>${p.sku}</td><td>${p.wh}</td><td>${p.qty}</td><td>${p.price}</td><td>${p.qty*p.price}</td><td><button class="red" onclick="delP(${i})">حذف</button></td></tr>`;
+});
+let ct=document.getElementById('customerTable');ct.innerHTML='';
+customers.forEach((c,i)=>{ct.innerHTML+=`<tr><td>${c.name}</td><td>${c.phone}</td><td>${c.city}</td><td><button class="red" onclick="delC(${i})">حذف</button></td></tr>`;});
+document.getElementById('totalProducts').innerText=products.length;
+document.getElementById('totalCustomers').innerText=customers.length;
+document.getElementById('totalQty').innerText=totalQty;
+document.getElementById('totalValue').innerText=totalVal;
+}
+render();
+</script>
+</body>
+</html>
